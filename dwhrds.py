@@ -22,11 +22,12 @@ class rdsSession:
     def __init__(self, db):
         self.db = db
         self.config = configparser.ConfigParser()
+        self.path = '/home/ubuntu/airflow/dags/dwl-team3/my_config.ini'
         pass
 
     def open_session(self):
         # Create engine and open session to DB
-        self.config.read('my_config.ini')
+        self.config.read(self.path)
         self.config.sections()
         conn_string = self.config['dwh_string']['conn_string']
         print(conn_string)
