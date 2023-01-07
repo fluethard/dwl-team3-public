@@ -18,6 +18,7 @@ class YouTubeCrossReference:
         self.df = pd.DataFrame
         self.dbConn = rdsSession('dwl_lake')
         self.config = configparser.ConfigParser()
+        self.path = '/home/ubuntu/airflow/dags/dwl-team3/'
 
     # def get_new_videos(self):
     #     self.dbConn.open_session()
@@ -26,7 +27,7 @@ class YouTubeCrossReference:
 
     def getVideoTitles(self):
 
-        self.config.read('my_config.ini')
+        self.config.read(self.path + 'my_config.ini')
         self.config.sections()
         connection = psycopg2.connect(user=self.config['lake']['user'],
                                       password=self.config['lake']['password'],

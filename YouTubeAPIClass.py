@@ -29,7 +29,7 @@ class YouTubeData:
         self.youtube_links_df = pd.DataFrame  # Dataframe only containing YouTube links from reddit
         self.youtube_extracted_df = []  # Dataframe used to extract the video_ids from the link for API requests
         self.config = configparser.ConfigParser()  # Security Variable used to not have any passwords in the file
-        self.path = r'C:\Users\dimit\Desktop\my_config.ini' # Path to specify the my_config.ini file (Local/Server)  r'C:\Users\dimit\Desktop\my_config.ini'
+        self.path = '/home/ubuntu/airflow/dags/dwl-team3/my_config.ini' # Path to specify the my_config.ini file (Local/Server)  r'C:\Users\dimit\Desktop\my_config.ini'
         self.config.read(self.path)  # Needed to define this variable to read the config.ini file
         self.config.sections()  # Function needed to be able to read the config.ini file in the __init__ function
         self.dbConn = rdsSession('dwl_lake')  # Variable to indicate to initialize rds session with the data lake
