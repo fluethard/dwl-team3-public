@@ -1,0 +1,32 @@
+WITH cte AS (
+  SELECT * ,
+     row_number() OVER(PARTITION BY video_id ORDER BY id asc) AS rn
+  FROM "YouTubeVideos"
+)
+Delete From "YouTubeVideos"
+where id in (select id from cte where rn > 1)
+
+
+WITH cte AS (
+  SELECT * ,
+     row_number() OVER(PARTITION BY channel_id ORDER BY id asc) AS rn
+  FROM "YouTubeChannels"
+)
+Delete From "YouTubeChannels"
+where id in (select id from cte where rn > 1)
+
+WITH cte AS (
+  SELECT * ,
+     row_number() OVER(PARTITION BY channel_id, date ORDER BY id asc) AS rn
+  FROM "YouTubeChannelStatistics"
+)
+Delete From "YouTubeChannelStatistics"
+where id in (select id from cte where rn > 1)
+
+WITH cte AS (
+  SELECT * ,
+     row_number() OVER(PARTITION BY video_id, date ORDER BY id asc) AS rn
+  FROM "YouTubeVideoStatistics"
+)
+Delete From "YouTubeVideoStatistics"
+where id in (select id from cte where rn > 1)
