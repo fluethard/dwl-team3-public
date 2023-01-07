@@ -28,12 +28,13 @@ class SpotifyData:
         self.orclist = []
         self.orcdict = {}
         self.artist_df = []
+        self.path = '/home/ubuntu/airflow/dags/dwl-team3/'
         self.df = pd.DataFrame
         pass
 
     def authenticate_spotify(self):
         # Authenticate Spotify API using OAuth2
-        self.config.read('/home/ubuntu/airflow/dags/dwl-team3/my_config.ini')
+        self.config.read(self.path + 'my_config.ini')
         self.config.sections()
 
         os.environ['SPOTIPY_CLIENT_ID'] = self.config['spotify']['client_id']
@@ -71,7 +72,7 @@ class SpotifyData:
         # Append new links to self.links_df for further processing in transform_reddit_data()
         # Method dependencies: get_orchestration()
         try:
-            self.config.read('/home/ubuntu/airflow/dags/dwl-team3/my_config.ini')
+            self.config.read(self.path + 'my_config.ini')
             self.config.sections()
             connection = psycopg2.connect(user=self.config['lake']['user'],
                                           password=self.config['lake']['password'],
@@ -290,6 +291,8 @@ class SpotifyData:
         # Top-level Method to get list of artists that have not been processed from orchestration table
         # produces self.artist_df as output for further use in process_artist_data()
         try:
+            self.config.read(self.path + 'my_config.ini')
+            self.config.sections()
             connection = psycopg2.connect(user=self.config['lake']['user'],
                                           password=self.config['lake']['password'],
                                           host=self.config['lake']['host'],

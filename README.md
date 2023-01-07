@@ -36,15 +36,15 @@ Special Python Libraries:
 - psycopg2 (Interaction with DB)
 - youtube_title_parse (Specific module to extract tile and artist from YouTube Video Title)
 
-All of these specific libraries are often not installed in and have to be installed to run this project:
+All of these specific libraries are often not installed and have to be installed to run this project. Due to this we
+created the code to create a new virtual environment on anaconda which includes all libraries needed to run this project.
 
+Just run each of the lines below and rename the "yourvenv" variable to your needs and then use this newly created environment
+to run the project.
 ```
-pip install --upgrade google-api-python-client
-pip install --upgrade spotipy
-pip install --upgrade praw
-pip install --upgrade sqlalchemy
-pip install --upgrade psycopg2
-pip install --upgrade youtube-title-parse
+conda create -n yourvenv python=3.8
+conda activate yourvenv
+pip install --upgrade google-api-python-client spotipy pandas praw sqlalchemy sqlalchemy-utils psycopg2 youtube-title-parse configparser datetime requests airflow pendulum
 ```
 
 
@@ -71,7 +71,9 @@ to pull the statistics for all our Videos and Channels which we already have and
 
 3. Get Spotify Data
 
-@ Fabian
+In a next step we can pull the Spotify Data from the Reddit leads we got above. For this we first run the __spotify_tracks_dag()__ function as well as the __spotify_artists_dag()__ function from the SpotifyAPIClass.py module. With these two function we get the dimensional data to all new leads which we acquired in the previous step.
+After we updated the spotifytracks and the spotifyartists table we can run the __spotify_track_popularity_dag()__ and the __spotify_artist_popularity_dag()__ functions to retrieve the daily popularity updates.
+ 
 
 4. Get Cross-References from YouTube to Spotify and vice versa
 

@@ -28,6 +28,7 @@ class redditGetter:
         self.dbConn = rdsSession('dwl_lake')
         self.postlimit = postlimit
         self.config = configparser.ConfigParser()
+        self.path = '/home/ubuntu/airflow/dags/dwl-team3/'
         #self.subreddit_list = ["radioreddit", "worldmusic", "popheads", "indieheads", "listentothis", "newmusic", "hiphopheads", "promoteyourmusic", "music", "letstalkmusic", "listige", "independentmusic", "musicinthemaking", "wereonspotify", "mymusic", "musicsuggestions", "thisisourmusic", "theseareouralbums", "shareyourmusic", "acousticoriginals", "composer"]
 
         pass
@@ -35,15 +36,15 @@ class redditGetter:
 
     def authenticateReddit(self):
         self.config = configparser.ConfigParser()
-        self.config.read('my_config.ini')
+        self.config.read(self.path + 'my_config.ini')
         self.config.sections()
 
         self.reddit = praw.Reddit(
-                client_id="n32iN1fS7bP7Fj1Xmu0Wug",
-                client_secret="AbwHTs4DtdmTTjnqW8D_LPhv_tYH4Q",
-                password="DWLpassword",
+                client_id=self.config['reddit']['client_id'],
+                client_secret=self.config['reddit']['client_secret'],
+                password=self.config['reddit']['password'],
                 user_agent="MyBot/0.0.1",
-                username="DWLproject",
+                username=self.config['reddit']['username'],
         )
         #print("Reddit authenticated")
 

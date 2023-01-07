@@ -17,47 +17,39 @@ Timestamp = datetime.strftime(datetime.now(), "%Y%m%d_%H%M%S")
 class YouTubeData:
 
     def __init__(self):
-        self.orctuple = None
-        self.crossref_youtube_video_id = []
-        self.links = []
-        self.crossref_df = pd.DataFrame
-        self.channel_df = pd.DataFrame
-        self.channelBatches = None
-        self.batch_size = 50
-        self.api_service_name = "youtube"
-        self.api_version = "v3"
-        self.DEVELOPER_KEY = "AIzaSyCGv4-2MG3lhkKogTk_dDjVVOYM6P_Sv1o"
-        self.DEVELOPER_KEY_CROSSREF = "AIzaSyAyKhZuc005D9k-43sWZpCpMNu4sKMduSA"
+        self.orctuple = None # Variable needed to be used in the SQL Query with the IN Operator
+        self.orclist = []  # Variable to push information about new reddit leads to read_reddit function
+        self.crossref_youtube_video_id = []  # Variable to store the video_id which was successfully cross-referenced
+        self.links = []  # YouTube URL Links list for API request
+        self.links_df = None  # # YouTube URL Links and Reddit Permalink dataframe for batch creation
+        self.crossref_df = pd.DataFrame  # Dataframe holding all spotify data for cross-reference to YouTube
+        self.channel_df = pd.DataFrame  # YouTube channel_id and Reddit Permalink to pull channel dimensional data
+        self.channel_batches = None  # channel_df batches to be looped through for API request and writing data to DB
+        self.link_batches = []  # List of dataframe batches containing the ids (link) and the permalink for API requests
+        self.youtube_links_df = pd.DataFrame  # Dataframe only containing YouTube links from reddit
+        self.youtube_extracted_df = []  # Dataframe used to extract the video_ids from the link for API requests
+        self.config = configparser.ConfigParser()  # Security Variable used to not have any passwords in the file
+        self.path = r'C:\Users\dimit\Desktop\my_config.ini' # Path to specify the my_config.ini file (Local/Server)  r'C:\Users\dimit\Desktop\my_config.ini'
+        self.config.read(self.path)  # Needed to define this variable to read the config.ini file
+        self.config.sections()  # Function needed to be able to read the config.ini file in the __init__ function
+        self.dbConn = rdsSession('dwl_lake')  # Variable to indicate to initialize rds session with the data lake
+        self.batch_size = 50  # Batch size for the API requests (50 is Max for list request in YouTube API)
+        self.api_service_name = "youtube"  # Service Name for API setup
+        self.api_version = "v3"  # API version for API setup
+        self.DEVELOPER_KEY = self.config['youtube']['dev_key_standard']  # Developer Key used for all requests except CR
+        self.DEVELOPER_KEY_CROSSREF = self.config['youtube']['dev_key_crossref']  # Developer Key for Cross-Ref requests
         self.youtube = googleapiclient.discovery.build(
-            self.api_service_name, self.api_version, developerKey=self.DEVELOPER_KEY)
+            self.api_service_name, self.api_version, developerKey=self.DEVELOPER_KEY)  # Built of YT API connection
         self.youtube_crossref = googleapiclient.discovery.build(
-            self.api_service_name, self.api_version, developerKey=self.DEVELOPER_KEY_CROSSREF)
-        self.df = pd.DataFrame
-        self.videoIDs = []
-        self.linkBatches = []
-        self.schema = 'public'
-        self.table_name = 'YouTubeVideos'
-        self.engine = create_engine("postgresql+psycopg2://postgres:LVrZWb1ossUZraaQuUCn@dwl-production.ccnhtolqau4u"
-                                    ".eu-central-1.rds.amazonaws.com:5432/dwl_lake")
-        self.links_df = None
-        self.youtube_links_df = None
-        self.youtube_extracted_df = []
-        self.config = configparser.ConfigParser()
-        self.dbConn = rdsSession('dwl_lake')
-        self.orclist = []
-        self.orcdict = {}
-        self.artist_df = []
-
+            self.api_service_name, self.api_version, developerKey=self.DEVELOPER_KEY_CROSSREF)  # Built of YT CR API con
         # A lot of YouTube API Keys were needed to do the initial Cross-Referencing, because of the quote
         # of the YouTube API of 10'000 a day and a search request taking up 100 per search.
-        # "AIzaSyCGv4-2MG3lhkKogTk_dDjVVOYM6P_Sv1o" OG
-        # "AIzaSyDRWZojBjXSBrD7T_BPtB7sdJ7hDSLgjcA" 1
-        # "AIzaSyDQwZ_HIQ9O5VSjKklEaETruFvxSRNq7ps" 2
-        # "AIzaSyDmi0QpYnhAqdQowsF0_PVOV8n7ESLJlHs" 3
-        # "AIzaSyDYoy_B9O2dhMEmRUtXb9F-KpghIZASb_c" 4
-        # "AIzaSyBFVMxLr3O_RDMEBsjalzZIvz6pZpKEO0w" 5
-        # "AIzaSyAqtxQW_eNHNlYFfCdqx-ov1431gG2pGec" 6
-        # "AIzaSyAyKhZuc005D9k-43sWZpCpMNu4sKMduSA" 7 (CrossRef)
+        # self.config['youtube']['dev_key_1']
+        # self.config['youtube']['dev_key_2']
+        # self.config['youtube']['dev_key_3']
+        # self.config['youtube']['dev_key_4']
+        # self.config['youtube']['dev_key_5']
+        # self.config['youtube']['dev_key_6']
 
     # Get the reddit permalinks and youtube_video_id where the id is still null! Basis to get leads in next function.
     # Further details in lakeorchestra.py module in conductor class.
@@ -66,17 +58,19 @@ class YouTubeData:
 
     def get_orchestration(self):
         orc = conductor()
-        orc.youtubeorcget()
+        orc.youtube_orc_get()
         self.orclist = orc.linklist
 
     # Read reddit leads based on orc list taken from above! Returns a dataframe with permalink and url.
     def read_reddit(self):
         try:
-            connection = psycopg2.connect(user="postgres",
-                                          password="LVrZWb1ossUZraaQuUCn",
-                                          host="dwl-production.ccnhtolqau4u.eu-central-1.rds.amazonaws.com",
-                                          port="5432",
-                                          database="dwl_lake")
+            self.config.read(self.path)
+            self.config.sections()
+            connection = psycopg2.connect(user=self.config['lake']['user'],
+                                          password=self.config['lake']['password'],
+                                          host=self.config['lake']['host'],
+                                          port=self.config['lake']['port'],
+                                          database=self.config['lake']['database'])
             cursor = connection.cursor()
 
             self.get_orchestration()
@@ -84,7 +78,6 @@ class YouTubeData:
 
             self.links_df = pd.read_sql_query(
                 "SELECT permalink, url FROM redditlinks WHERE permalink IN {}".format(self.orctuple), connection)
-
             return self.links_df
 
         except (Exception, psycopg2.Error) as error:
@@ -102,9 +95,9 @@ class YouTubeData:
         # Filter out only Spotify Track links, Album links might be processed at a later point
         self.youtube_links_df = self.links_df[self.links_df.url.str.contains('.youtu')]
         self.youtube_extracted_df = self.youtube_links_df.copy()
-        self.youtube_extracted_df['videoID1'] = self.youtube_links_df['url'].str.extract('https://youtu.be/(\w{11})')
+        self.youtube_extracted_df['videoID1'] = self.youtube_links_df['url'].str.extract('https://youtu.be/([\w-]{11})')
         self.youtube_extracted_df['videoID2'] = self.youtube_links_df['url'].str.extract(
-            'https://www.youtube.com/watch?v=(\w{11})')  # Because of two different patterns of the YouTube links,
+            'https://www.youtube.com/watch?v=([\w-]{11})')  # Because of two different patterns of the YouTube links,
         # we need to extract it twice since the str.extract function only handles one pattern!
         self.youtube_extracted_df['videoID'] = self.youtube_extracted_df['videoID1'].where(
             self.youtube_extracted_df['videoID1'].notnull(), self.youtube_extracted_df['videoID2'])
@@ -116,25 +109,23 @@ class YouTubeData:
     # 50 videos with on request and YouTube gives every user a quota of which a request is 1 quota point and a user
     # has 10'000 points a day. Therefore, 10'000 request which have to be used wisely with a lot of different requests!
     def create_batches(self):
-        self.videoIDs = self.youtube_extracted_df
-        self.linkBatches = [self.videoIDs[n:n + self.batch_size] for n in range(0, len(self.videoIDs), self.batch_size)]
+        self.link_batches = [self.youtube_extracted_df[n:n + self.batch_size] for n in range(0, len(self.youtube_extracted_df), self.batch_size)]
 
-        return self.linkBatches
+        return self.link_batches
 
     # Function to get the YouTube Video data based on the video_ids which have been extracted from the url and then
     # put into batches with the above functions.
     def get_youtube_videos(self):
         self.dbConn.open_session()
         print('Start Fetching Data')
-        for b in range(len(self.linkBatches)):  # Loop through batches of video_ids
-            self.links = self.linkBatches[b]['videoID'].to_list()
-            permalinks = self.linkBatches[b]['permalink'].to_list()
+        for b in range(len(self.link_batches)):  # Loop through batches of video_ids
+            self.links = self.link_batches[b]['videoID'].to_list()
+            permalinks = self.link_batches[b]['permalink'].to_list()
 
             # youtube.videos().list is already defined with the developer key etc. in the Class
             request = self.youtube.videos().list(
                 part="snippet,contentDetails,statistics,recordingDetails,status,topicDetails",
-                id=self.links,
-                videoCategoryId='10')
+                id=self.links)
 
             response = request.execute()
             # print(response)
@@ -246,11 +237,11 @@ class YouTubeData:
         youtube_video_ids = self.dbConn.lake_query("""SELECT video_id FROM "YouTubeVideos" """)
 
         # Create batches with video ids only
-        self.linkBatches = [youtube_video_ids[n:n + self.batch_size] for n in
+        self.link_batches = [youtube_video_ids[n:n + self.batch_size] for n in
                             range(0, len(youtube_video_ids), self.batch_size)]
 
-        for b in range(len(self.linkBatches)):
-            links = self.linkBatches[b]
+        for b in range(len(self.link_batches)):
+            links = self.link_batches[b]
 
             request = self.youtube.videos().list(
                 part="statistics",
@@ -288,17 +279,19 @@ class YouTubeData:
     def get_youtube_channels_list(self):
         # Function to get list of channels that have not been processed from orchestration table
         try:
-            connection = psycopg2.connect(user="postgres",
-                                          password="LVrZWb1ossUZraaQuUCn",
-                                          host="dwl-production.ccnhtolqau4u.eu-central-1.rds.amazonaws.com",
-                                          port="5432",
-                                          database="dwl_lake")
+            self.config.read(self.path)
+            self.config.sections()
+            connection = psycopg2.connect(user=self.config['lake']['user'],
+                                          password=self.config['lake']['password'],
+                                          host=self.config['lake']['host'],
+                                          port=self.config['lake']['port'],
+                                          database=self.config['lake']['database'])
             cursor = connection.cursor()
 
             # SQL Query to only get unprocessed channel_ids from YouTubeVideos Table.
             postgres_channel_lookup = """SELECT "YouTubeVideos".channel_id, lakeorchestra.permalink FROM lakeorchestra 
             LEFT JOIN "YouTubeVideos" ON lakeorchestra.youtube_video_id = "YouTubeVideos".video_id 
-            WHERE lakeorchestra.youtube_video_id IS NOT NULL AND lakeorchestra.youtube_channel_id IS NULL)"""
+            WHERE lakeorchestra.youtube_video_id IS NOT NULL AND lakeorchestra.youtube_channel_id IS NULL"""
 
             self.channel_df = pd.read_sql_query(postgres_channel_lookup, connection)
 
@@ -317,14 +310,14 @@ class YouTubeData:
         self.dbConn.open_session()
 
         # Create batches of channel_ids and permalinks to be requested together.
-        self.channelBatches = [self.channel_df[n:n + self.batch_size] for n in
+        self.channel_batches = [self.channel_df[n:n + self.batch_size] for n in
                                range(0, len(self.channel_df), self.batch_size)]
 
         # Looping through all the batches and making the request from the YouTubeAPI.
         # Set up is the same as with the YouTubeVideos and therefore not further explained here!
-        for b in range(len(self.channelBatches)):
-            channel_ids = self.channelBatches[b]['channel_id'].to_list()
-            permalinks = self.channelBatches[b]['permalink'].to_list()
+        for b in range(len(self.channel_batches)):
+            channel_ids = self.channel_batches[b]['channel_id'].to_list()
+            permalinks = self.channel_batches[b]['permalink'].to_list()
             request = self.youtube.channels().list(
                 part="snippet,contentDetails,statistics,brandingSettings,contentOwnerDetails,id,localizations,status,"
                      "topicDetails",
@@ -455,11 +448,11 @@ class YouTubeData:
         youtube_channels_ids = self.dbConn.lake_query("""SELECT channel_id FROM "YouTubeChannels" """)
 
         # Create batches for the channel_ids for each request.
-        self.linkBatches = [youtube_channels_ids[n:n + self.batch_size] for n in
+        self.link_batches = [youtube_channels_ids[n:n + self.batch_size] for n in
                             range(0, len(youtube_channels_ids), self.batch_size)]
 
-        for b in range(len(self.linkBatches)):
-            links = self.linkBatches[b]
+        for b in range(len(self.link_batches)):
+            links = self.link_batches[b]
 
             request = self.youtube.channels().list(
                 part="statistics",
@@ -598,11 +591,13 @@ class YouTubeData:
     def get_artist_track_from_spotify(self):
 
         try:
-            connection = psycopg2.connect(user="postgres",
-                                          password="LVrZWb1ossUZraaQuUCn",
-                                          host="dwl-production.ccnhtolqau4u.eu-central-1.rds.amazonaws.com",
-                                          port="5432",
-                                          database="dwl_lake")
+            self.config.read(self.path)
+            self.config.sections()
+            connection = psycopg2.connect(user=self.config['lake']['user'],
+                                          password=self.config['lake']['password'],
+                                          host=self.config['lake']['host'],
+                                          port=self.config['lake']['port'],
+                                          database=self.config['lake']['database'])
             cursor = connection.cursor()
 
             # Query to get the spotify data which is not yet cross-referenced. LIMIT is set to 99, because with one
@@ -780,3 +775,7 @@ def youtube_channel_statistics_DAG():
 def youtube_cross_ref_DAG():
     y = YouTubeData()
     y.search_youtube_video()
+
+#youtube_videos_DAG()
+#youtube_channels_DAG()
+

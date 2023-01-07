@@ -15,6 +15,7 @@ class conductor:
     def __init__(self):
         self.dbConn = rdsSession('dwl_lake')
         self.config = configparser.ConfigParser()
+        self.path = r'C:\Users\dimit\Desktop\my_config.ini'  # Path to specify the my_config.ini file (Local/Server)
 
     def redditorcget(self):
         # creates initial index for orchestration database
@@ -58,7 +59,7 @@ class conductor:
         for i in range(len(self.linklist)):
             try:
                 object = lakeOrchestra(
-                    permalink = self.linklist[i]
+                    permalink=self.linklist[i]
                     #created = datetime.datetime.now()
                 )
                 self.dbConn.add_to_table(object)
@@ -102,10 +103,10 @@ class conductor:
         except (Exception, psycopg2.Error) as error:
             print("Failed to fetch", error)
 
-    def youtubeorcget(self):
+    def youtube_orc_get(self):
         # creates initial index for orchestration database
         try:
-            self.config.read('/home/ubuntu/airflow/dags/dwl-team3/my_config.ini')
+            self.config.read(self.path)
             self.config.sections()
             connection = psycopg2.connect(user=self.config['lake']['user'],
                                           password=self.config['lake']['password'],
@@ -123,13 +124,12 @@ class conductor:
 
             for i in range(len(result)):
                 self.linklist.append(result[i][0])
-            #print(self.linklist)
         except (Exception, psycopg2.Error) as error:
             print("Failed to fetch", error)
 
 
 
-test = conductor()
+#test = conductor()
 #test.youtubeorcget()
 
 #test = conductor()

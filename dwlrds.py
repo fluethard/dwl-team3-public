@@ -22,13 +22,14 @@ class rdsSession:
     def __init__(self, db):
         self.db = db
         self.config = configparser.ConfigParser()
+        self.path = r'C:\Users\dimit\Desktop\my_config.ini'
         pass
 
     def open_session(self):
         # Create engine and open session to DB
 
 
-        self.config.read('/home/ubuntu/airflow/dags/dwl-team3/my_config.ini')
+        self.config.read(self.path)  # '/home/ubuntu/airflow/dags/dwl-team3/my_config.ini'
         self.config.sections()
         conn_string = self.config['lake_string']['conn_string']
         print(conn_string)
@@ -162,7 +163,7 @@ class rdsSession:
         # Simplified way of querying the table with raw sql
         try:
             self.config = configparser.ConfigParser()
-            self.config.read('/home/ubuntu/airflow/dags/dwl-team3/my_config.ini')
+            self.config.read(self.path) ##'/home/ubuntu/airflow/dags/dwl-team3/my_config.ini'
             self.config.sections()
 
             connection = psycopg2.connect(user=self.config['lake']['user'],
@@ -221,7 +222,7 @@ class rdsSession:
         # Method for querying the lakeOrchestra table
         # Simplified way of querying the table with raw sql
         try:
-            self.config.read('/home/ubuntu/airflow/dags/dwl-team3/my_config.ini')
+            self.config.read(self.path)  #'/home/ubuntu/airflow/dags/dwl-team3/my_config.ini'
             self.config.sections()
             connection = psycopg2.connect(user=self.config['lake']['user'],
                                           password=self.config['lake']['password'],
